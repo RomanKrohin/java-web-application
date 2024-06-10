@@ -1,0 +1,340 @@
+<?xml version="1.0"?>
+<project name="web3" basedir=".">
+
+    <path id="classpath">
+        <fileset dir="${user.home}/.m2/repository">
+            <include name="**/*.jar"/>
+        </fileset>
+    </path>
+
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+        <classpath>
+            <pathelement location="${lib.dir}/ant-contrib-1.0b3.jar"/>
+        </classpath>
+    </taskdef>
+
+    <macrodef name = "git">
+        <attribute name = "command" />
+        <attribute name = "dir" default = "" />
+        <element name = "args" optional = "true" />
+        <sequential>
+            <echo message = "git @{command}" />
+            <exec executable = "git" dir = "@{dir}">
+                <arg value = "@{command}" />
+                <args/>
+            </exec>
+        </sequential>
+    </macrodef>
+    <macrodef name = "git-clone-pull">
+        <attribute name = "repository" />
+        <attribute name = "dest" />
+        <sequential>
+            <git command = "clone">
+                <args>
+                    <arg value = "@{repository}" />
+                    <arg value = "@{dest}" />
+                </args>
+            </git>
+            <git command = "pull" dir = "@{dest}" />
+        </sequential>
+    </macrodef>
+
+    <target name="compile">
+        <mkdir dir="build" />
+        <javac srcdir="src" destdir="build" classpathref="classpath" includeantruntime="false"/>
+    </target>
+
+    <target name="build" depends="compile">
+        <jar destfile="jarnik.jar" basedir="build" compress="false" index="true" manifest="src/main/resources/MANIFEST.MF"/>
+        <war destfile="warnik.war" webxml="src/main/webapp/WEB-INF/web.xml">
+            <fileset dir="src/main/webapp">
+                <include name="**/*.*"/>
+            </fileset>
+            <classes dir="build"/>
+            <lib dir="${user.home}/.m2/repository"/>
+        </war>
+    </target>
+
+    <target name="clean">
+        <delete dir="build"/>
+        <delete dir="dist"/>
+        <delete file="jarnik.jar"/>
+        <delete file="warnik.war"/>
+    </target>
+
+    <target name="test" depends="build">
+        <junit>
+            <classpath>
+                <path refid="classpath"/>
+                <pathelement location="build"/>
+            </classpath>
+            <formatter type="plain"/>
+            <test name="HitTest" haltonfailure="no" outfile="result">
+                <formatter type="xml"/>
+            </test>
+        </junit>
+    </target>
+
+    <target name="scp" depends="build">
+        <sshexec
+                host="se.ifmo.ru"
+                port="2222"
+                username="s368381"
+                password="MtCI_0609"
+                command="mkdir -p ~/OPI_LAB3"
+                trust="true"
+        />
+        <scp
+                file="jarnik.jar"
+                todir="s368381@se.ifmo.ru:~/OPI_LAB3"
+                password="MtCI_0609"
+                port="2222"
+                trust="true"
+        />
+    </target>
+
+    <target name="javadoc" depends="compile">
+        <javadoc destdir="dist/javadoc">
+            <fileset dir="src" includes="**/*.java"/>
+            <doctitle>${ant.project.name}</doctitle>
+            <classpath refid="classpath"/>
+        </javadoc>
+        <echo message="Javadoc generated successfully!"/>
+    </target>
+
+    <target name="md5">
+        <mkdir dir="checksums"/>
+        <checksum todir="checksums" algorithm="MD5">
+            <fileset dir="src">
+                <include name="**/*.java"/>
+            </fileset>
+        </checksum>
+    </target>
+
+    <target name="sha1">
+        <mkdir dir="checksums"/>
+        <checksum todir="checksums" algorithm="SHA-1">
+            <fileset dir="src">
+                <include name="**/*.java"/>
+            </fileset>
+        </checksum>
+    </target>
+
+    <target name="xml">
+        <xmlvalidate failonerror="no" lenient="yes">
+            <fileset dir="src">
+                <include name="**/*.xml"/>
+            </fileset>
+        </xmlvalidate>
+    </target>
+
+    <target name="music" depends="build">
+        <sound>
+            <success source="music.wav" duration="30000"/>
+            <fail source="music.wav" duration="100000"/>
+        </sound>
+    </target>
+
+    <target name="native2ascii">
+        <native2ascii encoding="UTF8" src="src/main/resources/i18n" dest="src/main/resources/i18n/ascii" includes="*.properties"/>
+    </target>
+
+     <target name="env" depends="build">
+        <java jar="warnik.war" fork="true">
+            <jvmarg line="-Xmx256m"/>
+        </java>
+    </target>
+
+    <target name="report" depends="test">
+        <git command = "init"/>
+        <git command = "add">
+            <args>
+                <arg value = "result.xml"/>
+            </args>
+        </git>
+        <git command = "commit">
+            <args>
+                <arg value = "-m new results test"/>
+            </args>
+        </git>
+        <git command = "push"/>
+    </target>
+
+        <target name="alt">
+        <copy todir="tempsrc">
+            <fileset dir="src"/>
+        </copy>
+
+        <replace dir="src" >
+            <exclude name="**/*.jar"/>
+            <replacefilter token="newResults"
+                           value="newAltResults"/>
+        </replace>
+
+        <replace dir="src">
+            <exclude name="**/*.jar"/>
+            <replacefilter token="ResultsBean"
+                           value="ResultsAltBean"/>
+        </replace>
+
+        <replace dir="src" >
+            <exclude name="**/*.jar"/>
+            <replacefilter token="start"
+                           value="origin"/>
+        </replace>
+
+
+        <move todir="src" includeemptydirs="false">
+            <fileset dir="src">
+                <exclude name="**/*.jar"/>
+            </fileset>
+            <filtermapper >
+                <replacestring from="newResults" to="newAltResults" />
+                <replacestring from="ResultsBean" to="ResultsAltBean" />
+                <replacestring from="start" to="origin" />
+            </filtermapper>
+        </move>
+
+        <antcall target="clean"/>
+        <antcall target="build"/>
+
+        <delete dir="src"/>
+
+        <copy todir="src">
+            <fileset dir="tempsrc"/>
+        </copy>
+
+        <delete dir="tempsrc"/>
+    </target>
+
+
+    <target name="team">
+        <mkdir dir="team"/>
+        <property name="revision" value="HEAD"/>
+        <for list="1,2,3" param="i">
+            <sequential>
+
+                <antcall target="build"/>
+                <move file="jarnik.jar" tofile="dist/build-@{i}.jar" />
+                <move file="dist/build-@{i}.jar" todir="team" />
+                <exec executable="git">
+                    <arg value="reset"/>
+                    <arg value="--hard"/>
+                    <arg value="HEAD~1"/>
+                </exec>
+                <exec executable="git">
+                    <arg value="rev-parse"/>
+                    <arg value="HEAD"/>
+                    <redirector outputproperty="revision" />
+                </exec>
+            </sequential>
+        </for>
+        <echo message="Last revision: ${revision}"/>
+        <zip destfile="team" basedir="team" />
+    </target>
+    
+     <target name="history">
+        <exec executable="git" outputproperty="git.head_revision">
+            <arg line="rev-parse HEAD"/>
+        </exec>
+        <exec executable="git" outputproperty="git.tail_revision">
+            <arg line="rev-list --max-parents=0 HEAD"/>
+        </exec>
+
+        <echo message="Head revision: ${git.head_revision}"/>
+        <echo message="Tail revision: ${git.tail_revision}"/>
+
+        <var name="git.new_revision" unset="true"/>
+        <exec executable="git" outputproperty="git.new_revision">
+            <arg line="rev-parse HEAD~1"/>
+        </exec>
+
+        <trycatch>
+            <try>
+                <antcall target="compile"/>
+                <var name="compile.successful" unset="true"/>
+                <property name="compile.successful" value="true"/>
+                <echo message="Project compiled successfully!"/>
+
+                <sequential>
+                    <exec executable="git" outputproperty="diff_output">
+                        <arg line="diff ${git.head_revision} ${git.new_revision}"/>
+                    </exec>
+                    <echo file="diff_output.txt" message="${diff_output}"/>
+                </sequential>
+
+            </try>
+            <catch>
+                <echo message="Project compilation failed!"/>
+                <echo message="Checkout revision: ${git.new_revision}"/>
+                <exec executable="git" dir=".">
+                    <arg line="reset --hard ${git.new_revision}"/>
+                </exec>
+                <var name="compile.successful" unset="true"/>
+                <property name="compile.successful" value="false"/>
+                <if>
+                    <equals arg1="${git.new_revision}" arg2="${git.tail_revision}"/>
+                    <then>
+                        <echo message="No more revisions to checkout"/>
+                    </then>
+                    <else>
+                        <runtarget target="history"/>
+                    </else>
+                </if>
+            </catch>
+        </trycatch>
+
+        <exec executable="git" dir=".">
+            <arg line="checkout ${git.head_revision}"/>
+        </exec>
+    </target>
+
+    <target name="diff">
+        <exec executable="git" outputproperty="vcs.git.diff_output">
+            <arg value="diff" />
+            <arg value="--name-only" />
+        </exec>
+
+        <condition property="vcs.git.should_commit" value="true">
+            <resourcecount count="0">
+                <intersect>
+                    <filelist id="vcs.git.files_to_commit" files="${vcs.git.diff_output}"/>
+                    <filelist files="${vcs.git.diff_classes}" />
+                </intersect>
+            </resourcecount>
+        </condition>
+
+        <echoproperties prefix="vcs" />
+
+        <pathconvert property="vcs.git.files_to_commit_separated" refid="vcs.git.files_to_commit" pathsep=" " />
+
+        <if>
+            <isset property="vcs.git.should_commit" />
+
+            <then>
+                <tstamp>
+                    <format property="timestamp" pattern="MM.dd.yyyy hh:mm:ss aa"/>
+                </tstamp>
+
+                <exec executable="git">
+                    <arg value="add"/>
+                    <arg line="${vcs.git.files_to_commit_separated}" />
+                </exec>
+
+                <exec executable="git">
+                    <arg value="commit" />
+                    <arg value="-m" />
+                    <arg value="Commit changes from ${timestamp}" />
+                </exec>
+
+                <echo message="Committing changes"/>
+            </then>
+
+            <else>
+                <echo message="No changes to commit"/>
+            </else>
+        </if>
+    </target>
+
+    
+</project>

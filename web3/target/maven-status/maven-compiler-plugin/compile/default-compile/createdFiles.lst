@@ -1,0 +1,7 @@
+Beans/ResultsBean.class
+Beans/CounterBeanMBean.class
+Beans/Agent.class
+Beans/Result.class
+workmodules/DatabaseHandler.class
+Beans/CounterBean.class
+validator/Validator.class

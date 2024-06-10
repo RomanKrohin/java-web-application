@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html">
+ 
+<h:head>
+    <script src="../js/HomePage.js"></script>
+    <title>Home</title>
+    <style>
+        html, body {
+            background-color: #ffffff;
+            color: #000000;
+            text-align: center;
+        }
+        
+        div {
+            margin-top: 100px;
+        }
+        
+        label {
+            display: block;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        #clock {
+            font-size: 20px;
+        }
+        
+    </style>
+</h:head>
+<h:body onload="displayTime()">
+<div>
+    <label>
+        Крохин Роман Олегович, З224, 151674
+    </label>
+    <label id="clock"></label>
+    <h:form>
+        <h:commandButton value="Start" action="tablePage" id="button" style="background-color: #000000;
+        color: #ffffff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;"/>
+    </h:form>
+</div>
+</h:body>
+</html>
